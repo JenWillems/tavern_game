@@ -1,10 +1,10 @@
-// Cocktail.jsx
 import { useState } from 'react';
 import { INGREDIENTS } from './GameLogic';
-import { cocktailRecipes } from './CocktailData';  // <-- new import
+import { cocktailRecipes } from './CocktailData';
 
 export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled }) {
     const [selectedCocktail, setSelectedCocktail] = useState(null);
+
     return (
         <div style={{ display: 'flex', gap: '30px', justifyContent: 'center', alignItems: 'flex-start' }}>
             {/* Mixing Area */}
@@ -16,12 +16,10 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
                             onClick={() => onAddIngredient(ing)}
                             disabled={disabled || mixGlass.length >= 4}
                             style={{
-                                padding: '10px',
                                 borderRadius: '5px',
                                 backgroundColor: '#cc9900',
                                 color: 'black',
                                 cursor: 'pointer',
-                                minWidth: '80px'
                             }}
                         >
                             {ing.name}
@@ -33,7 +31,9 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
                     <h2>🧪 MixGlass</h2>
                     <ul>
                         {mixGlass.map((ing, i) => (
-                            <li key={i}>{ing.name} ({ing.type})</li>
+                            <li key={i}>
+                                {ing.name} ({ing.type})
+                            </li>
                         ))}
                     </ul>
                     <p>{mixGlass.length} / 4 ingredients</p>
@@ -46,7 +46,7 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
                         padding: '10px',
                         backgroundColor: '#dc3545',
                         color: 'white',
-                        borderRadius: '5px'
+                        borderRadius: '5px',
                     }}
                 >
                     Clear
@@ -54,41 +54,54 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
             </div>
 
             {/* Cocktail Book */}
-            <div style={{
-                borderLeft: '2px solid #444',
-                paddingLeft: '20px',
-                maxWidth: '300px',
-                height: '400px',
-                overflowY: 'scroll'
-            }}>
+            <div
+                style={{
+                    borderLeft: '2px solid #444',
+                    paddingLeft: '20px',
+                    maxWidth: '300px',
+                    height: '400px',
+                    overflowY: 'scroll',
+                }}
+            >
                 <h2 style={{ color: '#ffcc00' }}>📖 Cocktail Book</h2>
+
                 {cocktailRecipes.map((cocktail) => (
-                    <div
-                        key={cocktail.name}
-                        style={{
-                            cursor: 'pointer',
-                            marginBottom: '10px',
-                            padding: '5px',
-                            backgroundColor: selectedCocktail?.name === cocktail.name ? '#222' : 'transparent'
-                        }}
-                        onClick={() => setSelectedCocktail(cocktail)}
-                    >
-                        <strong style={{ color: '#fff' }}>{cocktail.name}</strong>
+                    <div key={cocktail.name}>
+                        <div
+                            className={`cocktail-item ${selectedCocktail?.name === cocktail.name ? 'selected' : ''}`}
+                            onClick={() => {
+                                setSelectedCocktail(cocktail);
+                                console.log(cocktail); // Log cocktail info on click
+                            }}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <strong>{cocktail.name}</strong>
+                        </div>
+
+                        {/* Show recipe details only if this cocktail is selected */}
+                        {selectedCocktail?.name === cocktail.name && (
+                            <div
+                                style={{
+                                    marginTop: '5px',
+                                    marginBottom: '15px',
+                                    padding: '10px 15px',
+                                    backgroundColor: '#111',
+                                    borderRadius: '6px',
+                                    color: '#ccc',
+                                    fontSize: '0.9rem',
+                                    lineHeight: '1.3',
+                                }}
+                            >
+                                <ul style={{ margin: '5px 0' }}>
+                                    {cocktail.ingredients.map((ing, i) => (
+                                        <li key={i}>{ing}</li>
+                                    ))}
+                                </ul>
+                                <p style={{ fontStyle: 'italic', color: '#aaa' }}>{cocktail.notes}</p>
+                            </div>
+                        )}
                     </div>
                 ))}
-
-                {/* Selected Cocktail Info */}
-                {selectedCocktail && (
-                    <div style={{ marginTop: '20px', borderTop: '1px solid #666', paddingTop: '10px' }}>
-                        <h3 style={{ color: '#ffcc00' }}>{selectedCocktail.name}</h3>
-                        <ul>
-                            {selectedCocktail.ingredients.map((ing, i) => (
-                                <li key={i} style={{ color: '#ccc' }}>{ing}</li>
-                            ))}
-                        </ul>
-                        <p style={{ color: '#aaa', fontStyle: 'italic' }}>{selectedCocktail.notes}</p>
-                    </div>
-                )}
             </div>
         </div>
     );

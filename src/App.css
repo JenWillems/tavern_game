@@ -1,42 +1,87 @@
-#root {
-  max-width: 1280px;
+/* Three columns layout */
+html {
+  background: #1a1a1a;
+}
+
+.layout {
+  display: flex;
+  gap: 20px;
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+/* Column panels */
+.sidebar, .mix-panel, .cocktail-book {
+  flex: 1;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Panel base */
+.panel {
+  background: #2a1f0d;        /* dark wood tone */
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+  color: #f0e6d2;            /* parchment-like text */
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* Buttons */
+.button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin: 4px 0;
+  transition: background 0.2s;
+}
+.button-green {
+  background: #4a7c59;
+  color: #f0e6d2;
+}
+.button-green:disabled {
+  background: #555;
+}
+.button-red {
+  background: #8c2c2c;
+  color: #f0e6d2;
+}
+.button-yellow {
+  background: #c09028;
+  color: #2a1f0d;
+}
+.button-mix {
+  background: #7b4f1e;
+  color: #f0e6d2;
 }
 
-.card {
-  padding: 2em;
+/* Header */
+.header {
+  font-size: 2.5rem;
+  color: #c09028;
+  margin-bottom: 10px;
 }
 
-.read-the-docs {
-  color: #888;
+.cocktail-item {
+  background: rgba(75, 75, 75, 0.7);
+  margin-bottom: 10px;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.3s ease;
+  color: #f0e6d2;
+  font-weight: 600;
+}
+
+.cocktail-item:hover {
+  background: #c09028;
+  color: #2a1f0d;
+  box-shadow: 0 0 10px #c09028;
+}
+
+.cocktail-item.selected {
+  background: #222;
+  color: #ffcc00;
+  box-shadow: 0 0 12px #ffcc00;
 }
