@@ -36,14 +36,16 @@ export default function App() {
     const handleServe = () => {
         const gainedPoints = evaluateDrink(mixGlass, mission);
         if (gainedPoints === 0) {
-            alert(`❌ Drink didn't meet all type requirements. No points awarded.`);
+            alert(`❌ Drink didn't meet all type requirements. No gold awarded.`);
         } else {
-            alert(`✅ Drink served! +${gainedPoints} points.`);
+            alert(`✅ Drink served! +${gainedPoints} gold.`);
         }
-        setScore(prev => Math.min(100, prev + gainedPoints));
+        -    setScore(prev => Math.min(100, prev + gainedPoints));
+        +    setScore(prev => prev + gainedPoints);
         setMixGlass([]);
         setMission(getRandomMission());
     };
+
 
     const handleRestart = () => {
         setScore(0);
