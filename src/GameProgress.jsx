@@ -1,25 +1,33 @@
-import React, { useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import './App.css';
 
 const defaultUpgrades = {
     moreIngredients: false,
-    moreCocktails: false,
     higherEarnings: false,
     meadFridge: false,
 };
 
 const upgradeInfo = {
     moreIngredients: 'Unlocks 4 brand-new ingredients in your bar.',
-    moreCocktails: 'Adds 6 exotic cocktail recipes to your book.',
     higherEarnings: 'Earn an extra $10 on every successful serve.',
     meadFridge: 'A mead fridge that you can use once every 2 rounds (after a serve).',
 };
 
 const upgradeCosts = {
-    moreIngredients: 100,
-    moreCocktails: 150,
-    higherEarnings: 120,
-    meadFridge: 200,
+    moreIngredients: 400,
+    higherEarnings: 700,
+    meadFridge: 1200,
+};
+
+const upgradeLabels = {
+    moreIngredients: (cost) => `Unlock 4 Ingredients ($${cost})`,
+    higherEarnings: (cost) => `+$10 per Drink ($${cost})`,
+    meadFridge: (cost) => `Add Mead Fridge ($${cost})`,
+};
+
+const showUpgradeAlerts = (unlocked, type) => {
+    window.alert(`🔓 Upgrades Unlocked:\n• ${unlocked.join('\n• ')}`);
+    window.alert(`ℹ️ ${upgradeInfo[type]}`);
 };
 
 const GameProgress = forwardRef(({ onUpgrade, onUseFridge }, ref) => {
@@ -41,46 +49,32 @@ const GameProgress = forwardRef(({ onUpgrade, onUseFridge }, ref) => {
         [upgrades.higherEarnings, meadCooldown]
     );
 
-    const purchaseUpgrade = (type) => {
-        if (money < upgradeCosts[type] || upgrades[type]) return;
-        setMoney((m) => m - upgradeCosts[type]);
-        setUpgrades((u) => {
-            const updated = { ...u, [type]: true };
-            // Show alerts after state updates
-            setTimeout(() => {
-                const unlocked = Object.entries(updated)
-                    .filter(([, v]) => v)
-                    .map(([k]) => k)
-                    .join('\n• ');
-                window.alert(`🔓 Upgrades Unlocked:\n• ${unlocked}`);
-                window.alert(`ℹ️ ${upgradeInfo[type]}`);
-            }, 0);
-            return updated;
-        });
-        onUpgrade?.(type);
-    };
+    const purchaseUpgrade = useCallback(
+        (type) => {
+            if (money < upgradeCosts[type] || upgrades[type]) return;
 
-    const handleUseMeadFridge = () => {
+            setMoney((m) => m - upgradeCosts[type]);
+            setUpgrades((prev) => {
+                const updated = { ...prev, [type]: true };
+                const unlocked = Object.entries(updated)
+                    .filter(([, unlocked]) => unlocked)
+                    .map(([key]) => key);
+
+                setTimeout(() => showUpgradeAlerts(unlocked, type), 0);
+                return updated;
+            });
+
+            onUpgrade?.(type);
+        },
+        [money, upgrades, onUpgrade]
+    );
+
+    const handleUseMeadFridge = useCallback(() => {
         if (!upgrades.meadFridge || meadCooldown > 0) return;
         setMeadCooldown(2);
         window.alert('🍯 You used the mead fridge! Free serve unlocked.');
         onUseFridge?.();
-    };
-
-    // Generate upgrade buttons dynamically to avoid repetition
-    const upgradeButtons = Object.keys(defaultUpgrades).map((type) => (
-        <button
-            key={type}
-            onClick={() => purchaseUpgrade(type)}
-            disabled={upgrades[type]}
-            className="button"
-        >
-            {type === 'moreIngredients' && `Unlock 4 Ingredients ($${upgradeCosts[type]})`}
-            {type === 'moreCocktails' && `Unlock 6 Cocktails ($${upgradeCosts[type]})`}
-            {type === 'higherEarnings' && `+$10 per Drink ($${upgradeCosts[type]})`}
-            {type === 'meadFridge' && `Add Mead Fridge ($${upgradeCosts[type]})`}
-        </button>
-    ));
+    }, [upgrades.meadFridge, meadCooldown, onUseFridge]);
 
     return (
         <div className="panel sidebar">
@@ -89,20 +83,32 @@ const GameProgress = forwardRef(({ onUpgrade, onUseFridge }, ref) => {
             <p>🔁 Round: {round}</p>
 
             {upgrades.meadFridge && (
-                <p>
-                    🍯 Mead Fridge:{' '}
-                    {meadCooldown > 0 ? `Cooldown (${meadCooldown} rounds left)` : 'Ready!'}
-                </p>
-            )}
-
-            {upgrades.meadFridge && meadCooldown === 0 && (
-                <button onClick={handleUseMeadFridge} className="button button-yellow">
-                    Use Mead Fridge
-                </button>
+                <>
+                    <p>
+                        🍯 Mead Fridge:{' '}
+                        {meadCooldown > 0 ? `Cooldown (${meadCooldown} rounds left)` : 'Ready!'}
+                    </p>
+                    {meadCooldown === 0 && (
+                        <button onClick={handleUseMeadFridge} className="button button-yellow">
+                            Use Mead Fridge
+                        </button>
+                    )}
+                </>
             )}
 
             <h3>Upgrades:</h3>
-            {upgradeButtons.reduce((acc, btn, idx) => (idx > 0 ? [...acc, <br key={idx} />, btn] : [btn]), [])}
+            {Object.keys(defaultUpgrades).map((type, idx) => (
+                <React.Fragment key={type}>
+                    {idx > 0 && <br />}
+                    <button
+                        onClick={() => purchaseUpgrade(type)}
+                        disabled={upgrades[type]}
+                        className="button"
+                    >
+                        {upgradeLabels[type](upgradeCosts[type])}
+                    </button>
+                </React.Fragment>
+            ))}
         </div>
     );
 });

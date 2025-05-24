@@ -35,6 +35,17 @@ html {
   margin: 4px 0;
   transition: background 0.2s;
 }
+.button-filter{
+  background: #c09028;
+  color: #2a1f0d;
+  margin-right: 5px;
+  margin-bottom: 5px;
+}
+.button-filter.selected {
+  background: #222;
+  color: #ffcc00;
+  box-shadow: 0 0 12px #ffcc00;
+}
 .button-green {
   background: #4a7c59;
   color: #f0e6d2;
