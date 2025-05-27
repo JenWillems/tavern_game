@@ -1,43 +1,53 @@
 // App.jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { getScoreData } from './GameLogic.js';
 import './App.css';
 
 import { getRandomMission, evaluateDrink, INGREDIENTS } from './GameLogic.js';
 import { cocktailRecipes } from './CocktailData.js';
 
-import GameProgress   from './GameProgress.jsx';
+import GameProgress from './GameProgress.jsx';
 import MissionDisplay from './MissionDisplay.jsx';
-import ScoreTime      from './ScoreTime.jsx';
-import FinanceReport  from './FinanceReport.jsx';
+import ScoreTime from './ScoreTime.jsx';
+import FinanceReport from './FinanceReport.jsx';
 
 const GARNISHES = [
     { name: 'Mint Leaf', type: 'Bitter' },
-    { name: 'Lemon Twist', type: 'Sour'   },
-    { name: 'Sugar Rim',   type: 'Sweet'  },
+    { name: 'Lemon Twist', type: 'Sour' },
+    { name: 'Sugar Rim', type: 'Sweet' },
     { name: 'Chili Flake', type: 'Strong' },
 ];
 
-const TASTE_FILTERS = ['Strong','Sweet','Sour','Bitter'];
+const TASTE_FILTERS = ['Strong', 'Sweet', 'Sour', 'Bitter'];
 
 export default function App() {
     // Bar-game state
-    const [mixGlass, setMixGlass]         = useState([]);
-    const [garnish, setGarnish]           = useState(null);
-    const [prepMethod, setPrepMethod]     = useState(null);
-    const [mission, setMission]           = useState(() => getRandomMission());
-    const [score, setScore]               = useState(0);
-    const [timeLeft, setTimeLeft]         = useState(20);
+    const [mixGlass, setMixGlass] = useState([]);
+    const [money, setMoney] = useState(0);
+    const [garnish, setGarnish] = useState(null);
+    const [prepMethod, setPrepMethod] = useState(null);
+    const [mission, setMission] = useState(() => getRandomMission());
+    const [score, setScore] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(120);
     const [drinksServed, setDrinksServed] = useState(0);
 
     // Cocktail-book
-    const [selectedFilters, setSelectedFilters]     = useState([]);
-    const [selectedCocktail, setSelectedCocktail]   = useState(null);
+    const [selectedFilters, setSelectedFilters] = useState([]);
+    const [selectedCocktail, setSelectedCocktail] = useState(null);
 
     // Day/report state
-    const [day, setDay]               = useState(1);
+    const [day, setDay] = useState(1);
     const [showReport, setShowReport] = useState(false);
 
     const progressRef = useRef();
+
+    // 3) Handler to receive money updates from GameProgress
+    // You had this part wrongly in main body, so let's create a callback:
+    const handleMoneyChange = useCallback(() => {
+        const { moneyEarned, totalCost } = getScoreData(drinksServed);
+        setMoney((prevMoney) => prevMoney + moneyEarned - totalCost);
+    }, [drinksServed]);
+
 
     // Timer effect: countdown unless report is showing
     useEffect(() => {
@@ -46,7 +56,7 @@ export default function App() {
             setShowReport(true);
             return;
         }
-        const id = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+        const id = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
         return () => clearTimeout(id);
     }, [timeLeft, showReport]);
 
@@ -58,28 +68,37 @@ export default function App() {
     }, []);
 
     // Ingredient handlers
-    const handleAddIngredient = useCallback(ing => {
-        if (showReport || mixGlass.length >= 4) return;
-        setMixGlass(g => [...g, ing]);
-    }, [mixGlass, showReport]);
+    const handleAddIngredient = useCallback(
+        (ing) => {
+            if (showReport || mixGlass.length >= 4) return;
+            setMixGlass((g) => [...g, ing]);
+        },
+        [mixGlass, showReport]
+    );
 
-    const handleSelectGarnish = useCallback(name => {
-        if (showReport) return;
-        setGarnish(g => (g === name ? null : name));
-    }, [showReport]);
+    const handleSelectGarnish = useCallback(
+        (name) => {
+            if (showReport) return;
+            setGarnish((g) => (g === name ? null : name));
+        },
+        [showReport]
+    );
 
-    const handleSelectPrep = useCallback(method => {
-        if (showReport) return;
-        setPrepMethod(m => (m === method ? null : method));
-    }, [showReport]);
+    const handleSelectPrep = useCallback(
+        (method) => {
+            if (showReport) return;
+            setPrepMethod((m) => (m === method ? null : method));
+        },
+        [showReport]
+    );
 
     // Serve the drink
     const handleServe = useCallback(() => {
         const pts = evaluateDrink(mixGlass, mission);
         if (pts > 0) {
             alert(`✅ Served! +${pts} gold.`);
-            setScore(s => s + pts);
-            setDrinksServed(n => n + 1);
+            setScore((s) => s + pts);
+            setDrinksServed((n) => n + 1);
             progressRef.current?.earnMoney(pts);
         } else {
             alert(`❌ Drink didn't meet requirements. No gold awarded.`);
@@ -96,15 +115,16 @@ export default function App() {
     // Next Day: hide report, reset bar, increment day
     const handleNextDay = useCallback(() => {
         setShowReport(false);
-        setDay(d => d + 1);
-        setTimeLeft(20);
+        setDay((d) => d + 1);
+        setTimeLeft(120);
         resetMix();
         setMission(getRandomMission());
         setDrinksServed(0);
     }, [resetMix]);
 
     // Upgrades & fridge from sidebar
-    const handleUpgrade   = useCallback(type => console.log('Upgrade:', type), []);
+    const handleUpgrade = useCallback((type) => console.log('Upgrade:', type), []);
+
     const handleUseFridge = useCallback(() => {
         progressRef.current?.earnMoney();
         resetMix();
@@ -112,24 +132,28 @@ export default function App() {
     }, [resetMix]);
 
     // Cocktail book filtering
-    const toggleFilter = useCallback(filter => {
-        setSelectedFilters(fs =>
-            fs.includes(filter) ? fs.filter(f => f !== filter) : [...fs, filter]
+    const toggleFilter = useCallback((filter) => {
+        setSelectedFilters((fs) =>
+            fs.includes(filter) ? fs.filter((f) => f !== filter) : [...fs, filter]
         );
     }, []);
 
-    const filteredCocktails = selectedFilters.length === 0
-        ? cocktailRecipes
-        : cocktailRecipes.filter(c =>
-            c.tags?.some(tag => selectedFilters.includes(tag))
-        );
+    const filteredCocktails = useMemo(() => {
+        const result =
+            selectedFilters.length === 0
+                ? cocktailRecipes
+                : cocktailRecipes.filter((c) =>
+                    c.tags?.some((tag) => selectedFilters.includes(tag))
+                );
+
+        return [...result].sort((a, b) => a.name.localeCompare(b.name));
+    }, [selectedFilters]);
 
     const clearFilters = useCallback(() => {
         setSelectedFilters([]);
         setSelectedCocktail(null);
     }, []);
 
-    // Render
     return (
         <div className="container">
             <h1 className="header">🍻 TavernCraft — Day {day}</h1>
@@ -141,6 +165,7 @@ export default function App() {
                         ref={progressRef}
                         onUpgrade={handleUpgrade}
                         onUseFridge={handleUseFridge}
+                        onMoneyChange={handleMoneyChange}
                     />
                 </aside>
 
@@ -150,7 +175,7 @@ export default function App() {
 
                     {/* Ingredient buttons */}
                     <div className="button-group">
-                        {INGREDIENTS.map(ing => (
+                        {INGREDIENTS.map((ing) => (
                             <button
                                 key={ing.name}
                                 onClick={() => handleAddIngredient(ing)}
@@ -158,18 +183,19 @@ export default function App() {
                                 className="button button-mix"
                             >
                                 {ing.name}
+                                <span className="ingredient-tag">{ing.type}</span>
                             </button>
                         ))}
                     </div>
 
                     {/* Garnish buttons */}
                     <div className="button-group">
-                        {GARNISHES.map(g => (
+                        {GARNISHES.map((g) => (
                             <button
                                 key={g.name}
                                 onClick={() => handleSelectGarnish(g.name)}
                                 disabled={showReport}
-                                className={`button button-garnish${garnish===g.name?' selected':''}`}
+                                className={`button button-garnish${garnish === g.name ? ' selected' : ''}`}
                             >
                                 {g.name}
                             </button>
@@ -178,12 +204,12 @@ export default function App() {
 
                     {/* Prep method buttons */}
                     <div className="button-group">
-                        {['Shaken','Stirred','Poured'].map(m => (
+                        {['Shaken', 'Stirred', 'Poured'].map((m) => (
                             <button
                                 key={m}
                                 onClick={() => handleSelectPrep(m)}
                                 disabled={showReport}
-                                className={`button button-method${prepMethod===m?' selected':''}`}
+                                className={`button button-method${prepMethod === m ? ' selected' : ''}`}
                             >
                                 {m}
                             </button>
@@ -199,8 +225,16 @@ export default function App() {
                                     {i.name} <small>({i.type})</small>
                                 </li>
                             ))}
-                            {garnish && <li><em>Garnish:</em> {garnish}</li>}
-                            {prepMethod && <li><em>Method:</em> {prepMethod}</li>}
+                            {garnish && (
+                                <li>
+                                    <em>Garnish:</em> {garnish}
+                                </li>
+                            )}
+                            {prepMethod && (
+                                <li>
+                                    <em>Method:</em> {prepMethod}
+                                </li>
+                            )}
                         </ul>
                         <p>
                             {mixGlass.length}/4 ingredients
@@ -220,7 +254,7 @@ export default function App() {
                         </button>
                         <button
                             onClick={resetMix}
-                            disabled={(mixGlass.length===0 && !garnish && !prepMethod) || showReport}
+                            disabled={(mixGlass.length === 0 && !garnish && !prepMethod) || showReport}
                             className="button button-red"
                         >
                             Clear
@@ -241,15 +275,14 @@ export default function App() {
                     </button>
                 </main>
 
-                {/* Cocktail book */}
                 <aside className="cocktail-book panel">
                     <h2>📖 Cocktail Book</h2>
                     <div className="button-group">
-                        {TASTE_FILTERS.map(f => (
+                        {TASTE_FILTERS.map((f) => (
                             <button
                                 key={f}
                                 onClick={() => toggleFilter(f)}
-                                className={`button button-filter${selectedFilters.includes(f)?' selected':''}`}
+                                className={`button button-filter${selectedFilters.includes(f) ? ' selected' : ''}`}
                             >
                                 {f}
                             </button>
@@ -258,38 +291,46 @@ export default function App() {
                             Clear Filters
                         </button>
                     </div>
+
                     {filteredCocktails.length === 0 ? (
                         <p className="empty">No cocktails match.</p>
                     ) : (
-                        filteredCocktails.map(c => (
-                            <div
-                                key={c.name}
-                                onClick={() => setSelectedCocktail(c)}
-                                className={`cocktail-item${selectedCocktail?.name===c.name?' selected':''}`}
-                            >
-                                <strong>{c.name}</strong>
-                            </div>
-                        ))
-                    )}
-                    {selectedCocktail && (
-                        <div className="cocktail-details">
-                            <h3>{selectedCocktail.name}</h3>
-                            <p><em>{selectedCocktail.description}</em></p>
-                            <p>Ingredients: {selectedCocktail.ingredients.join(', ')}</p>
-                            <p>Tags: {selectedCocktail.tags?.join(', ')||'None'}</p>
-                        </div>
+                        filteredCocktails.map((c) => {
+                            const isSelected = selectedCocktail?.name === c.name;
+                            return (
+                                <React.Fragment key={c.name}>
+                                    <div
+                                        onClick={() => setSelectedCocktail(c)}
+                                        className={`cocktail-item${isSelected ? ' selected' : ''}`}
+                                    >
+                                        <strong>{c.name}</strong>
+                                    </div>
+
+                                    {isSelected && (
+                                        <div className="cocktail-details">
+                                            <h3>{c.name}</h3>
+                                            <p>
+                                                <em>{c.description}</em>
+                                            </p>
+                                            <p>Ingredients: {c.ingredients.join(', ')}</p>
+                                            <p>Tags: {c.tags?.join(', ') || 'None'}</p>
+
+                                            {/* Garnish */}
+                                            {c.garnishes && <p><strong>Garnish:</strong> {c.garnishes}</p>}
+
+                                            {/* Serving */}
+                                            {c.serving && <p><strong>Serving:</strong> {c.serving}</p>}
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            );
+                        })
                     )}
                 </aside>
             </div>
 
             {/* End-of-day report modal */}
-            {showReport && (
-                <FinanceReport
-                    day={day}
-                    drinksServed={drinksServed}
-                    onNextDay={handleNextDay}
-                />
-            )}
+            {showReport && <FinanceReport day={day} drinksServed={drinksServed} onNextDay={handleNextDay} />}
         </div>
     );
 }

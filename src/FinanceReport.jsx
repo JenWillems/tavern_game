@@ -3,15 +3,16 @@ import React from 'react';
 import GameOverScreen from './GameOverScreen.jsx';
 import { getScoreData } from './GameLogic.js';
 
-export default function FinanceReport({ day, drinksServed, onNextDay }) {
+export default function FinanceReport({ day, drinksServed, currentMoney, onNextDay }) {
     const {
         moneyEarned,
         rentCost,
         boozeCost,
         foodCost,
         totalCost,
-        net
-    } = getScoreData(drinksServed);
+        net,
+        newBalance
+    } = getScoreData(drinksServed, currentMoney);
 
     return (
         <div
@@ -33,7 +34,8 @@ export default function FinanceReport({ day, drinksServed, onNextDay }) {
                 food={foodCost}
                 totalCost={totalCost}
                 net={net}
-                onNextDay={onNextDay}
+                newBalance={newBalance}  // Pass it here if you want to display it
+                onNextDay={() => onNextDay(newBalance)} // Pass the new balance on next day
             />
         </div>
     );

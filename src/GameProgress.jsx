@@ -1,4 +1,5 @@
-import React, { useState, forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
+
 import './App.css';
 
 const defaultUpgrades = {
@@ -30,21 +31,27 @@ const showUpgradeAlerts = (unlocked, type) => {
     window.alert(`ℹ️ ${upgradeInfo[type]}`);
 };
 
-const GameProgress = forwardRef(({ onUpgrade, onUseFridge }, ref) => {
+const GameProgress = forwardRef(({ onUpgrade, onUseFridge, onMoneyChange }, ref) => {
     const [money, setMoney] = useState(0);
     const [round, setRound] = useState(1);
     const [upgrades, setUpgrades] = useState(defaultUpgrades);
     const [meadCooldown, setMeadCooldown] = useState(0);
 
+    // Whenever `money` changes, notify parent
+    useEffect(() => {
+        onMoneyChange?.(money);
+    }, [money, onMoneyChange]);
+
     useImperativeHandle(
         ref,
         () => ({
-            earnMoney(base = 20) {
+            // Now you can pass a positive or negative number to add or subtract money
+            changeMoney(amount = 20) {
                 const bonus = upgrades.higherEarnings ? 10 : 0;
-                setMoney((m) => m + base + bonus);
-                setRound((r) => r + 1);
-                if (meadCooldown > 0) setMeadCooldown((c) => c - 1);
-            },
+                setMoney(m => m + amount + (amount > 0 ? bonus : 0)); // add bonus only on positive
+                setRound(r => r + 1);
+                if (meadCooldown > 0) setMeadCooldown(c => c - 1);
+            }
         }),
         [upgrades.higherEarnings, meadCooldown]
     );

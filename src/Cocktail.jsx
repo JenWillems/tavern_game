@@ -1,8 +1,10 @@
+// Cocktail.jsx
 import { useState, useMemo, useCallback } from 'react';
-import { INGREDIENTS } from './GameLogic';
+import { INGREDIENTS, GARNISHES } from './GameLogic';
 import { cocktailRecipes } from './CocktailData';
 
-const FLAVOR_TYPES = ['Strong', 'Sweet', 'Sour', 'Bitter'];
+// De drie mogelijk serving methodes
+const SERVING_METHODS = ['SHAKEN', 'STIRRED', 'POURED'];
 
 const styles = {
     container: {
@@ -15,6 +17,15 @@ const styles = {
         borderRadius: 5,
         backgroundColor: '#cc9900',
         color: 'black',
+        cursor: 'pointer',
+        padding: '5px 10px',
+        border: 'none',
+        fontWeight: 'bold',
+    },
+    garnishBtn: {
+        borderRadius: 5,
+        backgroundColor: '#7b4f1e',
+        color: 'white',
         cursor: 'pointer',
         padding: '5px 10px',
         border: 'none',
@@ -75,7 +86,10 @@ const styles = {
 };
 
 export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled }) {
+    // Welke cocktail is geselecteerd in het boek
     const [selectedCocktail, setSelectedCocktail] = useState(null);
+
+    // Filter state (Strong, Sweet, Sour, Bitter)
     const [filters, setFilters] = useState({
         Strong: false,
         Sweet: false,
@@ -83,33 +97,42 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
         Bitter: false,
     });
 
+    // Geselecteerde garnish
+    const [garnish, setGarnish] = useState(null);
+
+    // Geselecteerde serving methode
+    const [servingMethod, setServingMethod] = useState(null);
+
+    // Toggle filter en reset selectie
     const toggleFilter = useCallback((type) => {
-        setFilters((prev) => {
-            const newFilters = { ...prev, [type]: !prev[type] };
-            return newFilters;
-        });
+        setFilters((prev) => ({ ...prev, [type]: !prev[type] }));
         setSelectedCocktail(null);
     }, []);
 
+    // Welke filters zijn actief?
     const activeFilters = useMemo(
-        () => Object.entries(filters).filter(([_, checked]) => checked).map(([type]) => type),
+        () => Object.entries(filters).filter(([_, v]) => v).map(([t]) => t),
         [filters]
     );
 
+    // Filter de cocktaillijst
     const filteredCocktails = useMemo(() => {
         if (activeFilters.length === 0) return cocktailRecipes;
-
-        return cocktailRecipes.filter(
-            (cocktail) => cocktail.tags?.some((tag) => activeFilters.includes(tag)) ?? false
+        return cocktailRecipes.filter(c =>
+            c.tags?.some(tag => activeFilters.includes(tag))
         );
     }, [activeFilters]);
 
+    // Bereken of we mogen serveren (minstens 1 ingrediënt + serving gekozen)
+    const canServe = mixGlass.length > 0 && servingMethod !== null;
+
     return (
         <div style={styles.container}>
-            {/* Mixing Area */}
+            {/* Mix Area */}
             <div>
+                {/* Ingrediënten */}
                 <div style={{ display: 'flex', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
-                    {INGREDIENTS.map((ing) => (
+                    {INGREDIENTS.map(ing => (
                         <button
                             key={ing.name}
                             onClick={() => onAddIngredient(ing)}
@@ -121,36 +144,101 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
                     ))}
                 </div>
 
+                {/* Garnish keuzes */}
+                <div style={{ marginBottom: 10 }}>
+                    <strong>Choose Garnish:</strong>
+                    <div style={{ display: 'flex', gap: 10, marginTop: 5 }}>
+                        {GARNISHES.map(g => (
+                            <button
+                                key={g.name}
+                                onClick={() => setGarnish(g)}
+                                disabled={disabled}
+                                style={{
+                                    ...styles.garnishBtn,
+                                    backgroundColor: garnish?.name === g.name ? '#ffcc00' : '#7b4f1e',
+                                }}
+                            >
+                                {g.name}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                {/* MixGlass + Garnish */}
                 <div style={styles.mixGlassList}>
                     <h2>🧪 MixGlass</h2>
                     <ul>
                         {mixGlass.map((ing, i) => (
-                            <li key={i}>
-                                {ing.name} ({ing.type})
-                            </li>
+                            <li key={i}>{ing.name} ({ing.type})</li>
                         ))}
+                        {garnish && <li><em>Garnish: {garnish.name}</em></li>}
                     </ul>
                     <p>{mixGlass.length} / 4 ingredients</p>
                 </div>
 
+                {/* Serving methode */}
+                <div style={{ marginTop: 15 }}>
+                    <strong>Serving method:</strong>
+                    <div style={{ display: 'flex', gap: 15, marginTop: 5 }}>
+                        {SERVING_METHODS.map(method => (
+                            <label key={method} style={{ cursor: 'pointer', userSelect: 'none' }}>
+                                <input
+                                    type="radio"
+                                    name="servingMethod"
+                                    value={method}
+                                    checked={servingMethod === method}
+                                    onChange={() => setServingMethod(method)}
+                                    disabled={disabled}
+                                    style={{ marginRight: 5 }}
+                                />
+                                {method}
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Clear knop */}
                 <button
-                    onClick={onClear}
-                    disabled={mixGlass.length === 0 || disabled}
+                    onClick={() => {
+                        onClear();
+                        setGarnish(null);
+                        setServingMethod(null);
+                    }}
+                    disabled={disabled || (mixGlass.length === 0 && !garnish && !servingMethod)}
                     style={styles.clearBtn}
                 >
                     Clear
                 </button>
+
+                {/* Serve knop */}
+                <button
+                    onClick={() => {
+                        if (!canServe) {
+                            alert('Please add ingredients and choose a serving method before serving!');
+                            return;
+                        }
+                        alert(`Served ${servingMethod} with garnish ${garnish?.name || 'none'}.`);
+                    }}
+                    disabled={!canServe || disabled}
+                    style={{
+                        ...styles.clearBtn,
+                        backgroundColor: canServe ? '#28a745' : '#6c757d',
+                        marginTop: 10,
+                    }}
+                >
+                    Serve Cocktail
+                </button>
             </div>
 
-            {/* Cocktail Book */}
+            {/* Cocktail Boek */}
             <div style={styles.cocktailBook}>
                 <h2 style={{ color: '#ffcc00' }}>📖 Cocktail Book</h2>
 
-                {/* Filter checkboxes */}
+                {/* Filteren op smaak */}
                 <div style={styles.filterContainer}>
                     <strong>Filter by Flavor:</strong>
                     <div style={styles.filterLabels}>
-                        {FLAVOR_TYPES.map((type) => (
+                        {['Strong', 'Sweet', 'Sour', 'Bitter'].map(type => (
                             <label key={type} style={{ cursor: 'pointer', userSelect: 'none' }}>
                                 <input
                                     type="checkbox"
@@ -164,15 +252,17 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
                     </div>
                 </div>
 
-                {filteredCocktails.map((cocktail) => {
+                {/* Gefilterde cocktails */}
+                {filteredCocktails.map(cocktail => {
                     const isSelected = selectedCocktail?.name === cocktail.name;
                     return (
                         <div key={cocktail.name}>
                             <div
-                                className={`cocktail-item ${isSelected ? 'selected' : ''}`}
                                 onClick={() => {
                                     setSelectedCocktail(cocktail);
-                                    console.log(cocktail);
+                                    // Vooraf selecteer garnish & serving als het recept dat opgeeft
+                                    setGarnish(cocktail.garnish ? { name: cocktail.garnish } : null);
+                                    setServingMethod(cocktail.serving || null);
                                 }}
                                 style={styles.cocktailItem(isSelected)}
                             >
@@ -182,19 +272,16 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
                             {isSelected && (
                                 <div style={styles.recipeDetails}>
                                     <ul style={{ margin: '5px 0' }}>
-                                        {cocktail.ingredients.map((ing, i) => (
-                                            <li key={i}>{ing}</li>
-                                        ))}
+                                        {cocktail.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
                                     </ul>
+                                    {cocktail.garnish && (
+                                        <p style={styles.notes}><strong>Garnish:</strong> {cocktail.garnish}</p>
+                                    )}
                                     {cocktail.serving && (
-                                        <p style={styles.notes}>
-                                            <strong>Serving:</strong> {cocktail.serving}
-                                        </p>
+                                        <p style={styles.notes}><strong>Serving:</strong> {cocktail.serving}</p>
                                     )}
                                     {cocktail.notes && (
-                                        <p style={styles.notes}>
-                                            <strong>Notes:</strong> {cocktail.notes}
-                                        </p>
+                                        <p style={styles.notes}><strong>Notes:</strong> {cocktail.notes}</p>
                                     )}
                                 </div>
                             )}
