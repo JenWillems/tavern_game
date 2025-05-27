@@ -13,6 +13,7 @@ const styles = {
         justifyContent: 'center',
         alignItems: 'flex-start',
     },
+
     ingredientBtn: {
         borderRadius: 5,
         backgroundColor: '#cc9900',
@@ -125,6 +126,8 @@ export default function Cocktail({ mixGlass, onAddIngredient, onClear, disabled 
 
     // Bereken of we mogen serveren (minstens 1 ingrediënt + serving gekozen)
     const canServe = mixGlass.length > 0 && servingMethod !== null;
+    
+
 
     return (
         <div style={styles.container}>
